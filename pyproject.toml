@@ -1,0 +1,39 @@
+[project]
+name = "otonagai"
+version = "0.1.0"
+description = "Otonagai (大人買い): API de seguimiento de presupuesto y precios para coleccionables."
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.14.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "python-multipart>=0.0.12",
+    "bcrypt>=4.0.0",
+    "uvicorn[standard]>=0.32.0",
+    "email-validator>=2.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/RodrigoFernandez/otonagai"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+    "ruff>=0.6.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"

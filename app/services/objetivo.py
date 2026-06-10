@@ -1,0 +1,88 @@
+import os
+import uuid
+from typing import Optional
+
+from fastapi import HTTPException, UploadFile, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.config import settings
+from app.models.objetivo import Objetivo
+from app.schemas.objetivo import ObjetivoCreate, ObjetivoUpdate
+
+
+class ObjetivoService:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create(self, data: ObjetivoCreate) -> Objetivo:
+        objetivo = Objetivo(nombre=data.nombre, usuario_id=data.usuario_id)
+        self.session.add(objetivo)
+        await self.session.commit()
+        await self.session.refresh(objetivo)
+        return objetivo
+
+    async def get_by_id(self, objetivo_id: int) -> Objetivo:
+        stmt = (
+            select(Objetivo)
+            .where(Objetivo.id == objetivo_id)
+            .options(selectinload(Objetivo.descripciones))
+        )
+        objetivo = await self.session.scalar(stmt)
+        if not objetivo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Objetivo no encontrado"
+            )
+        return objetivo
+
+    async def list_by_usuario(self, usuario_id: Optional[int] = None) -> list[Objetivo]:
+        stmt = select(Objetivo)
+        if usuario_id is not None:
+            stmt = stmt.where(Objetivo.usuario_id == usuario_id)
+        stmt = stmt.order_by(Objetivo.id)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def update(self, objetivo_id: int, data: ObjetivoUpdate) -> Objetivo:
+        objetivo = await self.session.get(Objetivo, objetivo_id)
+        if not objetivo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Objetivo no encontrado"
+            )
+        if data.nombre is not None:
+            objetivo.nombre = data.nombre
+        await self.session.commit()
+        await self.session.refresh(objetivo)
+        return objetivo
+
+    async def delete(self, objetivo_id: int) -> None:
+        objetivo = await self.session.get(Objetivo, objetivo_id)
+        if not objetivo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Objetivo no encontrado"
+            )
+        await self.session.delete(objetivo)
+        await self.session.commit()
+
+    async def upload_image(self, objetivo_id: int, file: UploadFile) -> Objetivo:
+        objetivo = await self.session.get(Objetivo, objetivo_id)
+        if not objetivo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Objetivo no encontrado"
+            )
+
+        ext = os.path.splitext(file.filename or "image.jpg")[1]
+        filename = f"{uuid.uuid4().hex}{ext}"
+        upload_path = os.path.join(settings.upload_dir, str(objetivo_id))
+        os.makedirs(upload_path, exist_ok=True)
+        filepath = os.path.join(upload_path, filename)
+
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
+
+        objetivo.imagen = f"/uploads/{objetivo_id}/{filename}"
+        await self.session.commit()
+        await self.session.refresh(objetivo)
+        return objetivo
