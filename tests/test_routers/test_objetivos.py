@@ -2,6 +2,9 @@ import pytest
 from httpx import AsyncClient
 
 
+# @pytest.fixture sobre async def: declara una fixture asíncrona (puede usar await).
+# AsyncClient: cliente HTTP asíncrono httpx para tests.
+# -> int: anotación que indica que la fixture devuelve un entero.
 @pytest.fixture
 async def usuario_id(client: AsyncClient) -> int:
     res = await client.post(
@@ -10,6 +13,7 @@ async def usuario_id(client: AsyncClient) -> int:
     return res.json()["id"]
 
 
+# @pytest.mark.asyncio: marca un test como asíncrono para ejecutarlo con asyncio.
 @pytest.mark.asyncio
 async def test_crear_objetivo(client: AsyncClient, usuario_id: int):
     response = await client.post(

@@ -2,6 +2,9 @@ import pytest
 from httpx import AsyncClient
 
 
+# @pytest.mark.asyncio: marca el test como asíncrono para que pytest lo ejecute
+# sobre un event loop de asyncio.
+# AsyncClient: cliente HTTP asíncrono de httpx para enviar requests sin servidor real.
 @pytest.mark.asyncio
 async def test_crear_usuario(client: AsyncClient):
     response = await client.post(
