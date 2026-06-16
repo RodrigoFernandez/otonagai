@@ -13,10 +13,14 @@ from app.schemas.objetivo import ObjetivoCreate, ObjetivoUpdate
 
 
 class ObjetivoService:
+    # Servicio que encapsula la lógica de negocio relacionada con
+    # objetivos: CRUD básico y carga de imágenes.
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def create(self, data: ObjetivoCreate) -> Objetivo:
+        # Crea un nuevo objetivo y lo persiste en la base de datos.
         objetivo = Objetivo(nombre=data.nombre, usuario_id=data.usuario_id)
         self.session.add(objetivo)
         await self.session.commit()
@@ -24,6 +28,8 @@ class ObjetivoService:
         return objetivo
 
     async def get_by_id(self, objetivo_id: int) -> Objetivo:
+        # Obtiene un objetivo por su ID, incluyendo sus descripciones
+        # relacionadas (selectinload). Lanza 404 si no existe.
         stmt = (
             select(Objetivo)
             .where(Objetivo.id == objetivo_id)
@@ -37,6 +43,8 @@ class ObjetivoService:
         return objetivo
 
     async def list_by_usuario(self, usuario_id: Optional[int] = None) -> list[Objetivo]:
+        # Lista objetivos. Si se pasa usuario_id, filtra por ese usuario.
+        # Si es None, retorna todos los objetivos.
         stmt = select(Objetivo)
         if usuario_id is not None:
             stmt = stmt.where(Objetivo.usuario_id == usuario_id)
@@ -45,6 +53,8 @@ class ObjetivoService:
         return list(result.scalars().all())
 
     async def update(self, objetivo_id: int, data: ObjetivoUpdate) -> Objetivo:
+        # Actualiza los campos modificables de un objetivo.
+        # Actualmente solo permite cambiar el nombre.
         objetivo = await self.session.get(Objetivo, objetivo_id)
         if not objetivo:
             raise HTTPException(
@@ -57,6 +67,7 @@ class ObjetivoService:
         return objetivo
 
     async def delete(self, objetivo_id: int) -> None:
+        # Elimina un objetivo por su ID. Lanza 404 si no existe.
         objetivo = await self.session.get(Objetivo, objetivo_id)
         if not objetivo:
             raise HTTPException(
@@ -66,6 +77,9 @@ class ObjetivoService:
         await self.session.commit()
 
     async def upload_image(self, objetivo_id: int, file: UploadFile) -> Objetivo:
+        # Sube una imagen asociada a un objetivo. La imagen se guarda en
+        # upload_dir/<objetivo_id>/ con un nombre UUID para evitar colisiones.
+        # La URL relativa se almacena en el campo `imagen` del objetivo.
         objetivo = await self.session.get(Objetivo, objetivo_id)
         if not objetivo:
             raise HTTPException(

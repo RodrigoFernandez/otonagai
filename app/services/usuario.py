@@ -8,10 +8,15 @@ from app.schemas.usuario import UsuarioCreate
 
 
 class UsuarioService:
+    # Servicio que encapsula la lógica de negocio relacionada con
+    # usuarios: registro, consulta, listado y eliminación.
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def create(self, data: UsuarioCreate) -> Usuario:
+        # Registra un nuevo usuario. Valida que el mail no esté en uso,
+        # hashea la contraseña con bcrypt antes de guardarla.
         existing = await self.session.scalar(select(Usuario).where(Usuario.mail == data.mail))
         if existing:
             raise HTTPException(
@@ -30,6 +35,7 @@ class UsuarioService:
         return usuario
 
     async def get_by_id(self, usuario_id: int) -> Usuario:
+        # Obtiene un usuario por su ID. Lanza 404 si no existe.
         usuario = await self.session.get(Usuario, usuario_id)
         if not usuario:
             raise HTTPException(
@@ -38,10 +44,12 @@ class UsuarioService:
         return usuario
 
     async def list_all(self) -> list[Usuario]:
+        # Retorna todos los usuarios registrados, ordenados por ID.
         result = await self.session.execute(select(Usuario).order_by(Usuario.id))
         return list(result.scalars().all())
 
     async def delete(self, usuario_id: int) -> None:
+        # Elimina un usuario por su ID. Lanza 404 si no existe.
         usuario = await self.get_by_id(usuario_id)
         await self.session.delete(usuario)
         await self.session.commit()

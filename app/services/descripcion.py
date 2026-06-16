@@ -7,10 +7,15 @@ from app.schemas.descripcion import DescripcionCreate
 
 
 class DescripcionService:
+    # Servicio que encapsula la lógica de negocio relacionada con
+    # las descripciones de ferias (precios, monedas, locales).
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def create(self, data: DescripcionCreate) -> Descripcion:
+        # Crea una nueva descripción con los datos proporcionados
+        # y la persiste en la base de datos.
         descripcion = Descripcion(
             feria=data.feria,
             local=data.local,
@@ -24,6 +29,7 @@ class DescripcionService:
         return descripcion
 
     async def get_by_id(self, descripcion_id: int) -> Descripcion:
+        # Obtiene una descripción por su ID. Lanza 404 si no existe.
         descripcion = await self.session.get(Descripcion, descripcion_id)
         if not descripcion:
             raise HTTPException(
@@ -32,6 +38,8 @@ class DescripcionService:
         return descripcion
 
     async def list_by_objetivo(self, objetivo_id: int) -> list[Descripcion]:
+        # Retorna todas las descripciones asociadas a un objetivo,
+        # ordenadas por ID ascendente.
         stmt = (
             select(Descripcion)
             .where(Descripcion.objetivo_id == objetivo_id)
@@ -41,6 +49,7 @@ class DescripcionService:
         return list(result.scalars().all())
 
     async def delete(self, descripcion_id: int) -> None:
+        # Elimina una descripción por su ID. Lanza 404 si no existe.
         descripcion = await self.session.get(Descripcion, descripcion_id)
         if not descripcion:
             raise HTTPException(
