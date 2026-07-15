@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_allow_methods: list[str] = ["*"]
     # Headers permitidos (["*"] para desarrollo; restringir en producción)
     cors_allow_headers: list[str] = ["*"]
+    allowed_image_types: list[str] = ["image/jpeg", "image/png", "image/webp"]
 
     # Configuración para cargar variables desde archivo .env
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

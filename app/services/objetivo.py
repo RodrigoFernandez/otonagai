@@ -1,5 +1,5 @@
-import os
 import uuid
+from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException, UploadFile, status
@@ -77,24 +77,25 @@ class ObjetivoService:
         await self.session.commit()
 
     async def upload_image(self, objetivo_id: int, file: UploadFile) -> Objetivo:
-        # Sube una imagen asociada a un objetivo. La imagen se guarda en
-        # upload_dir/<objetivo_id>/ con un nombre UUID para evitar colisiones.
-        # La URL relativa se almacena en el campo `imagen` del objetivo.
         objetivo = await self.session.get(Objetivo, objetivo_id)
         if not objetivo:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Objetivo no encontrado"
             )
 
-        ext = os.path.splitext(file.filename or "image.jpg")[1]
+        if file.content_type not in settings.allowed_image_types:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Tipo de archivo no permitido: {file.content_type}",
+            )
+
+        ext = Path(file.filename or "image.jpg").suffix
         filename = f"{uuid.uuid4().hex}{ext}"
-        upload_path = os.path.join(settings.upload_dir, str(objetivo_id))
-        os.makedirs(upload_path, exist_ok=True)
-        filepath = os.path.join(upload_path, filename)
+        upload_path = Path(settings.upload_dir) / str(objetivo_id)
+        upload_path.mkdir(parents=True, exist_ok=True)
 
         content = await file.read()
-        with open(filepath, "wb") as f:
-            f.write(content)
+        (upload_path / filename).write_bytes(content)
 
         objetivo.imagen = f"/uploads/{objetivo_id}/{filename}"
         await self.session.commit()

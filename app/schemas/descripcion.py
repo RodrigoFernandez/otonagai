@@ -3,17 +3,15 @@
 # que entran (Create) y salen (Read) de la API.
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DescripcionCreate(BaseModel):
-    # Esquema usado al crear una descripción. Todos los campos son
-    # requeridos y se validan automáticamente con Pydantic.
-    feria: str          # Nombre de la feria o evento
-    local: str          # Nombre del local o puesto
-    moneda: str         # Tipo de moneda (ARS, USD, etc.)
-    precio: float       # Precio registrado
-    objetivo_id: int    # ID del objetivo al que pertenece esta descripción
+    feria: str
+    local: str
+    moneda: str
+    precio: float = Field(gt=0)
+    objetivo_id: int
 
 
 class DescripcionRead(BaseModel):

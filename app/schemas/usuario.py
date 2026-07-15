@@ -25,11 +25,4 @@ class UsuarioRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class UsuarioReadSimple(BaseModel):
-    # Versión reducida de UsuarioRead, útil para listados o
-    # referencias donde no se necesita la fecha de creación.
-    id: int
-    nombre: str
-    mail: str
 
-    model_config = {"from_attributes": True}

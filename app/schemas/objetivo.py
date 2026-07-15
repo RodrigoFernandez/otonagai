@@ -33,18 +33,4 @@ class ObjetivoRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ObjetivoReadWithDescripciones(ObjetivoRead):
-    # Extiende ObjetivoRead agregando la lista de descripciones
-    # asociadas. Se usa cuando se necesita la información completa
-    # del objetivo con todos sus detalles en una sola request.
-    descripciones: list["DescripcionRead"] = []  # noqa: F821
 
-    model_config = {"from_attributes": True}
-
-
-# Import diferido para romper la dependencia circular:
-# ObjetivoReadWithDescripciones referencia a DescripcionRead, y
-# descripcion.py podría referenciar schemas de objetivo.
-from app.schemas.descripcion import DescripcionRead  # noqa: E402, F401
-
-ObjetivoReadWithDescripciones.model_rebuild()

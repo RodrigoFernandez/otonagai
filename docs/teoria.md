@@ -730,6 +730,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./otonagai.db"
     upload_dir: str = "./uploads"
     cors_origins: list[str] = ["*"]
+    allowed_image_types: list[str] = ["image/jpeg", "image/png", "image/webp"]
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
@@ -768,6 +769,7 @@ CORS_ORIGINS='["https://miproducto.com"]'
 CORS_ALLOW_CREDENTIALS=true
 CORS_ALLOW_METHODS='["GET","POST","PUT","DELETE"]'
 CORS_ALLOW_HEADERS='["Authorization","Content-Type"]'
+ALLOWED_IMAGE_TYPES='["image/jpeg","image/png","image/webp"]'
 ```
 
 ### Seguridad
@@ -801,23 +803,7 @@ async def crear() ──▶ async def service.create() ──▶ await session.e
 
 Si mezclaras código síncrono con async, el event loop se bloquearía, anulando el beneficio de ASGI.
 
-### 13c. Dependencia circular resuelta con import diferido + model_rebuild()
-
-**El problema:** `ObjetivoReadWithDescripciones` necesita `DescripcionRead`, y `DescripcionRead` podría necesitar `ObjetivoRead`.
-
-**Solución:**
-```python
-# objetivo.py
-class ObjetivoReadWithDescripciones(ObjetivoRead):
-    descripciones: list["DescripcionRead"] = []  # string forward reference
-
-from app.schemas.descripcion import DescripcionRead  # import diferido
-ObjetivoReadWithDescripciones.model_rebuild()         # resuelve la referencia
-```
-
-`model_rebuild()` es un método de Pydantic v2 que resuelve forward references después de que todas las clases están definidas.
-
-### 13d. Cascade all, delete-orphan para integridad referencial
+### 13c. Cascade all, delete-orphan para integridad referencial
 
 ```python
 class Usuario(Base):
@@ -831,10 +817,10 @@ class Usuario(Base):
 
 **Sin cascade:** al eliminar un usuario, sus objetivos quedarían huérfanos (FK apuntando a un ID que no existe) → error de integridad.
 
-### 13e. UUID para nombres de archivo
+### 13d. UUID para nombres de archivo
 
 ```python
-ext = os.path.splitext(file.filename or "image.jpg")[1]
+ext = Path(file.filename or "image.jpg").suffix
 filename = f"{uuid.uuid4().hex}{ext}"
 ```
 
@@ -842,7 +828,7 @@ filename = f"{uuid.uuid4().hex}{ext}"
 - Evita path traversal: `uuid4().hex` solo contiene caracteres hexadecimales, no puede ser `../../etc/passwd`.
 - Sin información sensible: no expone nombres originales ni metadatos.
 
-### 13f. Organización modular por entidad
+### 13e. Organización modular por entidad
 
 ```
 app/
@@ -871,7 +857,7 @@ app/
 
 Cada entidad tiene su propio archivo en cada capa. Esto facilita encontrar código relacionado: si trabajás con usuarios, sabés que está en `models/usuario.py`, `schemas/usuario.py`, `services/usuario.py`, `routers/usuarios.py`.
 
-### 13g. response_model para controlar datos expuestos
+### 13f. response_model para controlar datos expuestos
 
 ```python
 @router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
